@@ -31,17 +31,9 @@
             this.lblInput.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
             this.lblInput.Location = new System.Drawing.Point(30, 20);
             this.lblInput.Name = "lblInput";
-            this.lblInput.Size = new System.Drawing.Size(95, 19);
+            this.lblInput.Size = new System.Drawing.Size(95, 23);
+            this.lblInput.TabIndex = 9;
             this.lblInput.Text = "Enter Text:";
-            // 
-            // txtInput
-            // 
-            this.txtInput.Location = new System.Drawing.Point(30, 45);
-            this.txtInput.Multiline = true;
-            this.txtInput.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
-            this.txtInput.Name = "txtInput";
-            this.txtInput.Size = new System.Drawing.Size(500, 70);
-            this.txtInput.TabIndex = 0;
             // 
             // lblKey
             // 
@@ -49,15 +41,35 @@
             this.lblKey.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
             this.lblKey.Location = new System.Drawing.Point(30, 125);
             this.lblKey.Name = "lblKey";
-            this.lblKey.Size = new System.Drawing.Size(83, 19);
+            this.lblKey.Size = new System.Drawing.Size(99, 23);
+            this.lblKey.TabIndex = 8;
             this.lblKey.Text = "Secret Key:";
+            // 
+            // lblOutput
+            // 
+            this.lblOutput.AutoSize = true;
+            this.lblOutput.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.lblOutput.Location = new System.Drawing.Point(30, 190);
+            this.lblOutput.Name = "lblOutput";
+            this.lblOutput.Size = new System.Drawing.Size(127, 23);
+            this.lblOutput.TabIndex = 7;
+            this.lblOutput.Text = "Result Output:";
+            // 
+            // txtInput
+            // 
+            this.txtInput.Location = new System.Drawing.Point(30, 45);
+            this.txtInput.Multiline = true;
+            this.txtInput.Name = "txtInput";
+            this.txtInput.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.txtInput.Size = new System.Drawing.Size(500, 70);
+            this.txtInput.TabIndex = 0;
             // 
             // txtKey
             // 
-            this.txtKey.Location = new System.Drawing.Point(30, 150);
+            this.txtKey.Location = new System.Drawing.Point(30, 157);
             this.txtKey.Name = "txtKey";
             this.txtKey.PasswordChar = '*';
-            this.txtKey.Size = new System.Drawing.Size(460, 23);
+            this.txtKey.Size = new System.Drawing.Size(460, 22);
             this.txtKey.TabIndex = 1;
             // 
             // btnToggleKey
@@ -67,27 +79,18 @@
             this.btnToggleKey.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             this.btnToggleKey.Location = new System.Drawing.Point(495, 150);
             this.btnToggleKey.Name = "btnToggleKey";
-            this.btnToggleKey.Size = new System.Drawing.Size(35, 23);
+            this.btnToggleKey.Size = new System.Drawing.Size(35, 35);
             this.btnToggleKey.TabIndex = 6;
             this.btnToggleKey.Text = "👁";
             this.btnToggleKey.UseVisualStyleBackColor = false;
             this.btnToggleKey.Click += new System.EventHandler(this.btnToggleKey_Click);
             // 
-            // lblOutput
-            // 
-            this.lblOutput.AutoSize = true;
-            this.lblOutput.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.lblOutput.Location = new System.Drawing.Point(30, 190);
-            this.lblOutput.Name = "lblOutput";
-            this.lblOutput.Size = new System.Drawing.Size(112, 19);
-            this.lblOutput.Text = "Result Output:";
-            // 
             // txtOutput
             // 
             this.txtOutput.Location = new System.Drawing.Point(30, 215);
             this.txtOutput.Multiline = true;
-            this.txtOutput.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.txtOutput.Name = "txtOutput";
+            this.txtOutput.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.txtOutput.Size = new System.Drawing.Size(500, 90);
             this.txtOutput.TabIndex = 2;
             // 
@@ -149,7 +152,7 @@
             // 
             // Form1
             // 
-            this.BackColor = System.Drawing.Color.WhiteSmoke;
+            this.BackColor = System.Drawing.Color.Gainsboro;
             this.ClientSize = new System.Drawing.Size(574, 400);
             this.Controls.Add(this.btnToggleKey);
             this.Controls.Add(this.btnCopy);
@@ -169,6 +172,7 @@
             this.Text = "🔒 Secure Vault - AES Encryption Tool";
             this.ResumeLayout(false);
             this.PerformLayout();
+
         }
 
         private System.Windows.Forms.Label lblInput;
