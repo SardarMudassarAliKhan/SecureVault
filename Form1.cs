@@ -8,116 +8,42 @@ namespace SecureVault
 {
     public partial class Form1 : Form
     {
-        private readonly string key ;
-
         public Form1()
         {
             InitializeComponent();
         }
 
-        private void btnEncrypt_Click(object sender, EventArgs e)
+        // 🔐 AES Encryption
+        private string Encrypt(string plainText, string key)
         {
-            try
+            using (Aes aes = Aes.Create())
             {
-                string plainText = txtInput.Text.Trim();
-                if (string.IsNullOrEmpty(plainText))
-                {
-                    MessageBox.Show("Please enter text to encrypt.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
+                aes.Key = Encoding.UTF8.GetBytes(PadKey(key, aes.KeySize / 8));
+                aes.GenerateIV();
 
-                string encrypted = EncryptString(plainText, key);
-                txtOutput.Text = encrypted;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error: " + ex.Message, "Encryption Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        private void btnDecrypt_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                string cipherText = txtInput.Text.Trim();
-                if (string.IsNullOrEmpty(cipherText))
-                {
-                    MessageBox.Show("Please enter encrypted text to decrypt.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    return;
-                }
-
-                string decrypted = DecryptString(cipherText, key);
-                txtOutput.Text = decrypted;
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error: " + ex.Message, "Decryption Failed", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        private void btnClear_Click(object sender, EventArgs e)
-        {
-            txtInput.Clear();
-            txtOutput.Clear();
-        }
-        private void btnCopy_Click(object sender, EventArgs e)
-        {
-            if (!string.IsNullOrEmpty(txtOutput.Text))
-            {
-                Clipboard.SetText(txtOutput.Text);
-                MessageBox.Show("Result copied to clipboard ✅", "Copied", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-            else
-            {
-                MessageBox.Show("No result to copy!", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-            }
-        }
-
-        // Encrypt
-        private string EncryptString(string plainText, string key)
-        {
-            using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
-            {
-                // Normalize key to 32 bytes (AES-256)
-                byte[] keyBytes = new byte[32];
-                byte[] inputKeyBytes = Encoding.UTF8.GetBytes(key);
-                Array.Copy(inputKeyBytes, keyBytes, Math.Min(inputKeyBytes.Length, keyBytes.Length));
-
-                aes.Key = keyBytes;
-                aes.GenerateIV(); // random IV
-
+                using (var encryptor = aes.CreateEncryptor(aes.Key, aes.IV))
                 using (var ms = new MemoryStream())
                 {
-                    // Write IV first
-                    ms.Write(aes.IV, 0, aes.IV.Length);
-
-                    using (var encryptor = aes.CreateEncryptor(aes.Key, aes.IV))
+                    ms.Write(aes.IV, 0, aes.IV.Length); // prepend IV
                     using (var cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write))
-                    using (var sw = new StreamWriter(cs, Encoding.UTF8))
+                    using (var sw = new StreamWriter(cs))
                     {
-                        sw.Write(plainText); // works even for very long text
+                        sw.Write(plainText);
                     }
-
                     return Convert.ToBase64String(ms.ToArray());
                 }
             }
         }
 
-        // Decrypt
-        private string DecryptString(string cipherText, string key)
+        // 🔓 AES Decryption
+        private string Decrypt(string cipherText, string key)
         {
             byte[] fullCipher = Convert.FromBase64String(cipherText);
 
-            using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
+            using (Aes aes = Aes.Create())
             {
-                // Normalize key to 32 bytes
-                byte[] keyBytes = new byte[32];
-                byte[] inputKeyBytes = Encoding.UTF8.GetBytes(key);
-                Array.Copy(inputKeyBytes, keyBytes, Math.Min(inputKeyBytes.Length, keyBytes.Length));
+                aes.Key = Encoding.UTF8.GetBytes(PadKey(key, aes.KeySize / 8));
 
-                aes.Key = keyBytes;
-
-                // Extract IV (first 16 bytes)
                 byte[] iv = new byte[aes.BlockSize / 8];
                 byte[] cipher = new byte[fullCipher.Length - iv.Length];
 
@@ -126,13 +52,98 @@ namespace SecureVault
 
                 aes.IV = iv;
 
-                using (var ms = new MemoryStream(cipher))
                 using (var decryptor = aes.CreateDecryptor(aes.Key, aes.IV))
+                using (var ms = new MemoryStream(cipher))
                 using (var cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read))
-                using (var sr = new StreamReader(cs, Encoding.UTF8))
+                using (var sr = new StreamReader(cs))
                 {
-                    return sr.ReadToEnd(); // recovers even very long text
+                    return sr.ReadToEnd();
                 }
+            }
+        }
+
+        // Pads or trims key to correct size
+        private string PadKey(string key, int length)
+        {
+            if (key.Length > length)
+                return key.Substring(0, length);
+            else if (key.Length < length)
+                return key.PadRight(length, '0');
+            else
+                return key;
+        }
+
+        // Encrypt Button
+        private void btnEncrypt_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(txtInput.Text) || string.IsNullOrWhiteSpace(txtKey.Text))
+                {
+                    MessageBox.Show("Please enter text and key.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                txtOutput.Text = Encrypt(txtInput.Text, txtKey.Text);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Encryption failed: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        // Decrypt Button
+        private void btnDecrypt_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(txtInput.Text) || string.IsNullOrWhiteSpace(txtKey.Text))
+                {
+                    MessageBox.Show("Please enter text and key.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                txtOutput.Text = Decrypt(txtInput.Text, txtKey.Text);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Decryption failed: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        // Clear Button
+        private void btnClear_Click(object sender, EventArgs e)
+        {
+            txtInput.Clear();
+            txtKey.Clear();
+            txtOutput.Clear();
+        }
+
+        // Copy Button
+        private void btnCopy_Click(object sender, EventArgs e)
+        {
+            if (!string.IsNullOrWhiteSpace(txtOutput.Text))
+            {
+                Clipboard.SetText(txtOutput.Text);
+                MessageBox.Show("Output copied to clipboard!", "Copied", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+            else
+            {
+                MessageBox.Show("Nothing to copy.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
+        private void btnToggleKey_Click(object sender, EventArgs e)
+        {
+            if (txtKey.PasswordChar == '*')
+            {
+                txtKey.PasswordChar = '\0';
+                btnToggleKey.Text = "🙈";
+            }
+            else
+            {
+                txtKey.PasswordChar = '*';  
+                btnToggleKey.Text = "👁"; 
             }
         }
     }
