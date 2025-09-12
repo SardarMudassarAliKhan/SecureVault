@@ -60,37 +60,6 @@ namespace SecureVault
             txtInput.Clear();
             txtOutput.Clear();
         }
-
-        // AES Encryption
-        private string EncryptString(string plainText, string key)
-        {
-            using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
-            {
-                // Normalize the key to 32 bytes (256 bits)
-                byte[] keyBytes = new byte[32];
-                byte[] inputKeyBytes = Encoding.UTF8.GetBytes(key);
-
-                // Copy or trim input key
-                Array.Copy(inputKeyBytes, keyBytes, Math.Min(inputKeyBytes.Length, keyBytes.Length));
-
-                aes.Key = keyBytes;
-                aes.GenerateIV(); // random IV for security
-
-                using (var encryptor = aes.CreateEncryptor(aes.Key, aes.IV))
-                using (var ms = new MemoryStream())
-                {
-                    ms.Write(aes.IV, 0, aes.IV.Length); // prepend IV
-
-                    using (var cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write))
-                    using (var sw = new StreamWriter(cs))
-                    {
-                        sw.Write(plainText);
-                    }
-
-                    return Convert.ToBase64String(ms.ToArray());
-                }
-            }
-        }
         private void btnCopy_Click(object sender, EventArgs e)
         {
             if (!string.IsNullOrEmpty(txtOutput.Text))
@@ -104,26 +73,65 @@ namespace SecureVault
             }
         }
 
+        // Encrypt
+        private string EncryptString(string plainText, string key)
+        {
+            using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
+            {
+                // Normalize key to 32 bytes (AES-256)
+                byte[] keyBytes = new byte[32];
+                byte[] inputKeyBytes = Encoding.UTF8.GetBytes(key);
+                Array.Copy(inputKeyBytes, keyBytes, Math.Min(inputKeyBytes.Length, keyBytes.Length));
 
+                aes.Key = keyBytes;
+                aes.GenerateIV(); // random IV
 
-        // AES Decryption
+                using (var ms = new MemoryStream())
+                {
+                    // Write IV first
+                    ms.Write(aes.IV, 0, aes.IV.Length);
+
+                    using (var encryptor = aes.CreateEncryptor(aes.Key, aes.IV))
+                    using (var cs = new CryptoStream(ms, encryptor, CryptoStreamMode.Write))
+                    using (var sw = new StreamWriter(cs, Encoding.UTF8))
+                    {
+                        sw.Write(plainText); // works even for very long text
+                    }
+
+                    return Convert.ToBase64String(ms.ToArray());
+                }
+            }
+        }
+
+        // Decrypt
         private string DecryptString(string cipherText, string key)
         {
-            byte[] iv = new byte[16];
-            byte[] buffer = Convert.FromBase64String(cipherText);
+            byte[] fullCipher = Convert.FromBase64String(cipherText);
 
-            using (Aes aes = Aes.Create())
+            using (AesCryptoServiceProvider aes = new AesCryptoServiceProvider())
             {
-                aes.Key = Encoding.UTF8.GetBytes(key);
+                // Normalize key to 32 bytes
+                byte[] keyBytes = new byte[32];
+                byte[] inputKeyBytes = Encoding.UTF8.GetBytes(key);
+                Array.Copy(inputKeyBytes, keyBytes, Math.Min(inputKeyBytes.Length, keyBytes.Length));
+
+                aes.Key = keyBytes;
+
+                // Extract IV (first 16 bytes)
+                byte[] iv = new byte[aes.BlockSize / 8];
+                byte[] cipher = new byte[fullCipher.Length - iv.Length];
+
+                Array.Copy(fullCipher, iv, iv.Length);
+                Array.Copy(fullCipher, iv.Length, cipher, 0, cipher.Length);
+
                 aes.IV = iv;
 
-                ICryptoTransform decryptor = aes.CreateDecryptor(aes.Key, aes.IV);
-
-                using (MemoryStream ms = new MemoryStream(buffer))
-                using (CryptoStream cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read))
-                using (StreamReader sr = new StreamReader(cs))
+                using (var ms = new MemoryStream(cipher))
+                using (var decryptor = aes.CreateDecryptor(aes.Key, aes.IV))
+                using (var cs = new CryptoStream(ms, decryptor, CryptoStreamMode.Read))
+                using (var sr = new StreamReader(cs, Encoding.UTF8))
                 {
-                    return sr.ReadToEnd();
+                    return sr.ReadToEnd(); // recovers even very long text
                 }
             }
         }
